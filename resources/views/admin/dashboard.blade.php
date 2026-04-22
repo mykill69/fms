@@ -447,7 +447,7 @@
         </div>
     </div>
 
-    <script>
+    {{-- <script>
         function dashboard() {
             return {
                 totalFeedback: 0,
@@ -919,6 +919,501 @@
                             .includes(w))) return 'background:#fef2f2;color:#b91c1c';
                     if (['good', 'fast', 'excellent', 'love', 'great', 'nice', 'wonderful', 'amazing', 'lovely'].some(w => t
                             .includes(w))) return 'background:#ecfdf5;color:#0f766e';
+                    return 'background:#f8fafc;color:#334155';
+                },
+
+                destroy() {
+                    this.stopPolling();
+                    if (this.trendChart) this.trendChart.destroy();
+                    if (this.typeChart) this.typeChart.destroy();
+                    if (this.roleChart) this.roleChart.destroy();
+                    if (this.deptChart) this.deptChart.destroy();
+                    if (this.ratingChart) this.ratingChart.destroy();
+                }
+            }
+        }
+    </script> --}}
+
+
+    <script>
+        function dashboard() {
+            return {
+                // State variables
+                totalFeedback: 0,
+                avgRating: 0,
+                flaggedCount: 0,
+                flaggedChange: 0,
+                outstandingOffice: '',
+                outstandingOfficeScore: 0,
+                totalGrowth: 0,
+                avgChange: 0,
+                sentiment: {
+                    Positive: 0,
+                    Neutral: 0,
+                    Negative: 0
+                },
+                recurringTerms: [],
+                aiInsights: [],
+                aiNarrative: [],
+                recentFeedback: [],
+                negativeOffices: [],
+                filteredFeedback: [],
+                quickRange: 'month',
+                lastUpdated: 'just now',
+                activeRange: null,
+                activeKeywordFilter: null,
+                aiRecommendations: [],
+                trendChart: null,
+                typeChart: null,
+                roleChart: null,
+                deptChart: null,
+                ratingChart: null,
+                lastId: 0,
+                pollingInterval: null,
+                isLoading: false,
+                hasNewData: false,
+                newDataCount: 0,
+                dateFrom: '',
+                dateTo: '',
+
+                // Add base URL from Laravel
+                baseUrl: '{{ url('/') }}',
+
+                init() {
+                    this.load();
+                    this.startPolling();
+                },
+
+                startPolling() {
+                    this.stopPolling();
+                    this.pollingInterval = setInterval(() => this.checkForUpdates(), 3000);
+                },
+
+                stopPolling() {
+                    if (this.pollingInterval) clearInterval(this.pollingInterval);
+                },
+
+                async checkForUpdates() {
+                    if (this.isLoading) return;
+                    try {
+                        const res = await fetch(`${this.baseUrl}/admin/dashboard/poll?last_id=${this.lastId}`);
+                        const data = await res.json();
+                        if (data.has_new) {
+                            this.hasNewData = true;
+                            this.newDataCount = data.new_count;
+                            this.lastId = data.latest_id;
+                            if (data.latest_feedback && data.new_count === 1) this.addNewFeedback(data.latest_feedback);
+                            this.refreshDashboardData();
+                        }
+                    } catch (e) {
+                        console.error('Poll error:', e);
+                    }
+                },
+
+                addNewFeedback(feedback) {
+                    const exists = this.recentFeedback.some(f => f.id === feedback.id);
+                    if (!exists) {
+                        this.recentFeedback.unshift(feedback);
+                        if (this.recentFeedback.length > 10) this.recentFeedback.pop();
+                    }
+                    this.filteredFeedback = this.activeKeywordFilter ?
+                        this.recentFeedback.filter(f => f.feedback.toLowerCase().includes(this.activeKeywordFilter
+                            .toLowerCase())) : [...this.recentFeedback];
+                    this.lastUpdated = 'just now';
+                },
+
+                refreshDashboardData() {
+                    const activeRange = this.activeRange;
+                    let url = `${this.baseUrl}/admin/dashboard/data?fresh=1`;
+                    if (activeRange?.start && activeRange?.end) url += `&start=${activeRange.start}&end=${activeRange.end}`;
+                    fetch(url).then(res => res.json()).then(data => {
+                        this.totalFeedback = data.totalFeedback ?? 0;
+                        this.avgRating = parseFloat(data.avgRating ?? 0).toFixed(1);
+                        this.flaggedCount = data.flaggedCount ?? 0;
+                        this.totalGrowth = data.totalGrowth ?? 0;
+                        this.avgChange = data.avgChange ?? 0;
+                        this.flaggedChange = data.flaggedChange ?? 0;
+                        this.sentiment = data.sentimentBreakdown || {
+                            Positive: 0,
+                            Neutral: 0,
+                            Negative: 0
+                        };
+                        this.outstandingOffice = data.outstandingOffice || '';
+                        this.outstandingOfficeScore = data.outstandingOfficeScore || 0;
+                        this.recurringTerms = data.recurringTerms || [];
+                        this.recentFeedback = data.recentFeedback || [];
+                        this.negativeOffices = data.negativeByDepartment || [];
+                        this.aiInsights = (data.aiInsights || []).map(item => ({
+                            issue: item.issue || item.title || 'Unknown',
+                            title: item.title || item.issue || 'Unknown',
+                            count: item.count || 1,
+                            priority: item.priority || 'low',
+                            department: item.department || 'Multiple Departments'
+                        }));
+                        this.aiNarrative = (data.aiNarrative || []).map(item => ({
+                            title: item.title || 'Insight',
+                            description: item.description || 'No description available',
+                            priority: item.priority || 'positive',
+                            department: item.department || 'Multiple Departments'
+                        }));
+                        this.aiRecommendations = data.aiRecommendations || [];
+                        this.filteredFeedback = this.activeKeywordFilter ?
+                            this.recentFeedback.filter(f => f.feedback.toLowerCase().includes(this
+                                .activeKeywordFilter.toLowerCase())) : [...this.recentFeedback];
+                        if (this.recentFeedback.length > 0) this.lastId = Math.max(...this.recentFeedback.map(f => f
+                            .id));
+                        this.updateCharts(data);
+                        this.hasNewData = false;
+                        this.lastUpdated = 'just now';
+                    }).catch(e => console.error('Refresh error:', e));
+                },
+
+                refreshData() {
+                    this.hasNewData = false;
+                    this.load(true);
+                },
+
+                setQuickRange(period) {
+                    const today = new Date();
+                    let from = new Date(today);
+                    let to = new Date(today);
+                    if (period === 'today') from = to;
+                    else if (period === 'week') from.setDate(today.getDate() - 7);
+                    else if (period === 'month') from.setMonth(today.getMonth() - 1);
+                    this.quickRange = period;
+                    this.activeRange = {
+                        start: from.toISOString().split('T')[0],
+                        end: to.toISOString().split('T')[0]
+                    };
+                    this.dateFrom = this.activeRange.start;
+                    this.dateTo = this.activeRange.end;
+                    this.load();
+                },
+
+                applyCustomRange() {
+                    if (!this.dateFrom || !this.dateTo) return;
+                    this.quickRange = null;
+                    this.activeRange = {
+                        start: this.dateFrom,
+                        end: this.dateTo
+                    };
+                    this.load();
+                },
+
+                clearDateRange() {
+                    this.dateFrom = '';
+                    this.dateTo = '';
+                    this.activeRange = null;
+                    this.quickRange = 'month';
+                    this.load();
+                },
+
+                manualRefresh() {
+                    this.load(true);
+                },
+
+                filterByKeyword(k) {
+                    this.activeKeywordFilter = this.activeKeywordFilter === k ? null : k;
+                    this.filteredFeedback = this.activeKeywordFilter ?
+                        this.recentFeedback.filter(f => f.feedback.toLowerCase().includes(this.activeKeywordFilter
+                            .toLowerCase())) : [...this.recentFeedback];
+                },
+
+                async load(forceFresh = false) {
+                    if (this.isLoading) return;
+                    this.isLoading = true;
+                    this.lastUpdated = 'updating...';
+                    try {
+                        let url = forceFresh ? `${this.baseUrl}/admin/dashboard/data?fresh=1` :
+                            `${this.baseUrl}/admin/dashboard/data`;
+                        if (this.activeRange?.start && this.activeRange?.end) url += (url.includes('?') ? '&' : '?') +
+                            `start=${this.activeRange.start}&end=${this.activeRange.end}`;
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        this.totalFeedback = data.totalFeedback ?? 0;
+                        this.avgRating = parseFloat(data.avgRating ?? 0).toFixed(1);
+                        this.flaggedCount = data.flaggedCount ?? 0;
+                        this.totalGrowth = data.totalGrowth ?? 0;
+                        this.avgChange = data.avgChange ?? 0;
+                        this.flaggedChange = data.flaggedChange ?? 0;
+                        this.sentiment = data.sentimentBreakdown || {
+                            Positive: 0,
+                            Neutral: 0,
+                            Negative: 0
+                        };
+                        this.aiRecommendations = data.aiRecommendations || [];
+                        this.outstandingOffice = data.outstandingOffice || '';
+                        this.outstandingOfficeScore = data.outstandingOfficeScore || 0;
+                        this.recurringTerms = data.recurringTerms || [];
+                        this.recentFeedback = data.recentFeedback || [];
+                        this.negativeOffices = data.negativeByDepartment || [];
+                        this.aiInsights = (data.aiInsights || []).map(item => ({
+                            issue: item.issue || item.title || 'Unknown',
+                            title: item.title || item.issue || 'Unknown',
+                            count: item.count || 1,
+                            priority: item.priority || 'low',
+                            department: item.department || 'Multiple Departments'
+                        }));
+                        this.aiNarrative = (data.aiNarrative || []).map(item => ({
+                            title: item.title || 'Insight',
+                            description: item.description || 'No description available',
+                            priority: item.priority || 'positive',
+                            department: item.department || 'Multiple Departments'
+                        }));
+                        this.filteredFeedback = [...this.recentFeedback];
+                        if (this.recentFeedback.length > 0) this.lastId = Math.max(...this.recentFeedback.map(f => f
+                            .id));
+                        this.updateCharts(data);
+                        this.lastUpdated = 'just now';
+                    } catch (e) {
+                        console.error('Load error:', e);
+                        this.lastUpdated = 'error';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                updateCharts(data) {
+                    if (!data) return;
+                    if (!this.trendChart) {
+                        this.trendChart = new Chart(this.$refs.trendChart.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: data.submissionTrend?.labels ?? [],
+                                datasets: [{
+                                    label: 'Submissions',
+                                    data: data.submissionTrend?.values ?? [],
+                                    borderColor: '#10b981',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    fill: true,
+                                    backgroundColor: 'rgba(16,185,129,0.08)'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        grid: {
+                                            color: '#f1f5f9'
+                                        },
+                                        ticks: {
+                                            precision: 0
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        this.trendChart.data.labels = data.submissionTrend?.labels ?? [];
+                        this.trendChart.data.datasets[0].data = data.submissionTrend?.values ?? [];
+                        this.trendChart.update();
+                    }
+                    const ratingValues = Object.values(data.ratingDistribution || {});
+                    if (!this.ratingChart) {
+                        this.ratingChart = new Chart(this.$refs.ratingChart.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: ['1★', '2★', '3★', '4★', '5★'],
+                                datasets: [{
+                                    data: ratingValues,
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 6
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        this.ratingChart.data.datasets[0].data = ratingValues;
+                        this.ratingChart.update();
+                    }
+                    const typeLabels = Object.keys(data.typeCounts || {});
+                    const typeValues = Object.values(data.typeCounts || {});
+                    if (!this.typeChart) {
+                        this.typeChart = new Chart(this.$refs.typeChart.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: typeLabels,
+                                datasets: [{
+                                    data: typeValues,
+                                    backgroundColor: ['#10b981', '#3b82f6', '#eab308', '#ef4444', '#8b5cf6',
+                                        '#14b8a6'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '65%',
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            boxWidth: 8,
+                                            padding: 10,
+                                            font: {
+                                                size: 10
+                                            },
+                                            generateLabels: (chart) => {
+                                                const dataset = chart.data.datasets[0];
+                                                const total = dataset.data.reduce((a, b) => a + b, 0) || 1;
+                                                return chart.data.labels.map((label, i) => {
+                                                    const value = dataset.data[i];
+                                                    const percent = ((value / total) * 100).toFixed(1);
+                                                    return {
+                                                        text: `${label} (${value}) - ${percent}%`,
+                                                        fillStyle: dataset.backgroundColor[i],
+                                                        strokeStyle: dataset.backgroundColor[i],
+                                                        hidden: false,
+                                                        index: i
+                                                    };
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        this.typeChart.data.labels = typeLabels;
+                        this.typeChart.data.datasets[0].data = typeValues;
+                        this.typeChart.update();
+                    }
+                    const deptLabels = Object.keys(data.departmentCounts || {});
+                    const deptValues = Object.values(data.departmentCounts || {});
+
+                    if (!this.deptChart) {
+                        this.deptChart = new Chart(this.$refs.deptChart.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: deptLabels,
+                                datasets: [{
+                                    label: 'Number of Feedbacks',
+                                    data: deptValues,
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 6
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (context) => {
+                                                const value = context.parsed.x || 0;
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percent = ((value / total) * 100).toFixed(1);
+                                                return `${value} feedbacks (${percent}%)`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: {
+                                            color: '#f1f5f9'
+                                        },
+                                        ticks: {
+                                            precision: 0,
+                                            stepSize: 1
+                                        }
+                                    },
+                                    y: {
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            font: {
+                                                size: 10
+                                            }
+                                        }
+                                    }
+                                },
+                                layout: {
+                                    padding: {
+                                        left: 5,
+                                        right: 5,
+                                        top: 5,
+                                        bottom: 5
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        this.deptChart.data.labels = deptLabels;
+                        this.deptChart.data.datasets[0].data = deptValues;
+                        this.deptChart.update();
+                    }
+                    if (!this.roleChart) {
+                        this.roleChart = new Chart(this.$refs.roleChart.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: Object.keys(data.roleCounts || {}),
+                                datasets: [{
+                                    data: Object.values(data.roleCounts || {}),
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        this.roleChart.data.labels = Object.keys(data.roleCounts || {});
+                        this.roleChart.data.datasets[0].data = Object.values(data.roleCounts || {});
+                        this.roleChart.update();
+                    }
+                },
+
+                calloutClass(p) {
+                    return p === 'critical' ? 'bg-red-50 border-red-200' : p === 'warning' ?
+                        'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200';
+                },
+
+                badgeColor(p) {
+                    return p === 'critical' ? 'bg-red-500 text-white' : p === 'warning' ? 'bg-amber-500 text-white' :
+                        'bg-emerald-500 text-white';
+                },
+
+                progressColor(p) {
+                    return p === 'high' ? 'bg-red-500' : p === 'medium' ? 'bg-amber-400' : 'bg-emerald-500';
+                },
+
+                getKeywordStyle(term) {
+                    const t = term.toLowerCase();
+                    if (['slow', 'delay', 'problem', 'error', 'issue', 'poor', 'bad', 'terrible', 'not'].some(w => t
+                            .includes(w)))
+                        return 'background:#fef2f2;color:#b91c1c';
+                    if (['good', 'fast', 'excellent', 'love', 'great', 'nice', 'wonderful', 'amazing', 'lovely'].some(w => t
+                            .includes(w)))
+                        return 'background:#ecfdf5;color:#0f766e';
                     return 'background:#f8fafc;color:#334155';
                 },
 

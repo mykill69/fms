@@ -21,13 +21,12 @@ use App\Http\Controllers\AdminController;
 // Route::get('/admin/ai-insights', [AdminController::class, 'aiInsights']);
 
 // USER SIDE
-Route::get('/feedback', [FeedbackController::class, 'create']);
-Route::post('/feedback', [FeedbackController::class, 'store']);
-Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-Route::get('/admin/dashboard/data', [AdminController::class, 'dashboardData']);
-Route::get('/admin/dashboard/poll', [AdminController::class, 'pollUpdates']);
-Route::get('/admin/feedbacks', [AdminController::class, 'feedbacks']);
-Route::get('/admin/feedback/{id}', [AdminController::class, 'show']);
-Route::delete('/admin/feedback/{id}', [AdminController::class, 'delete']);
-
-Route::get('/admin/test-ollama', [AdminController::class, 'testOllama']);
+Route::prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/dashboard/data', [AdminController::class, 'dashboardData']);
+    Route::get('/dashboard/poll', [AdminController::class, 'pollUpdates']);
+    Route::get('/feedbacks', [AdminController::class, 'feedbacks']);
+    Route::get('/feedback/{id}', [AdminController::class, 'show']);
+    Route::delete('/feedback/{id}', [AdminController::class, 'delete']);
+    Route::get('/test-ollama', [AdminController::class, 'testOllama']);
+});
