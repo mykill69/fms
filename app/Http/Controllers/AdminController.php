@@ -19,7 +19,6 @@ class AdminController extends Controller
     {
         $this->aiService = $aiService;
     }
-
     public function dashboard()
     {
         return view('admin.dashboard');
