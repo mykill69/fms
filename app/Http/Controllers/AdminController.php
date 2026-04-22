@@ -9,6 +9,7 @@ use App\Models\Feedback;
 use App\Services\OllamaService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -154,12 +155,63 @@ class AdminController extends Controller
             ->toArray();
             
         $feedbacksForAI = $query->clone()
-            ->latest()
-            ->limit(50)
-            ->get(['feedback', 'department'])
-            ->toArray();
-            
-        $texts = array_column($feedbacksForAI, 'feedback');
+    ->latest()
+    ->limit(50)
+    ->get(['feedback', 'department'])
+    ->toArray();
+    
+$texts = array_column($feedbacksForAI, 'feedback');
+$texts = array_filter($texts, fn($t) => !empty(trim($t)));
+
+try {
+    $aiInsights = $this->aiService->smartCluster($texts);
+} catch (\Exception $e) {
+    Log::error('AI Insights failed: ' . $e->getMessage());
+    $aiInsights = [];
+}
+
+try {
+    $aiNarrative = $this->aiService->generateInsights($texts);
+} catch (\Exception $e) {
+    Log::error('AI Narrative failed: ' . $e->getMessage());
+    $aiNarrative = [];
+}
+
+try {
+    $aiRecommendations = $this->aiService->generateRecommendations($texts);
+} catch (\Exception $e) {
+    Log::error('AI Recommendations failed: ' . $e->getMessage());
+    $aiRecommendations = [];
+}
+
+if (empty($aiInsights)) {
+    $aiInsights = [[
+        'issue' => 'No issues detected',
+        'title' => 'All Clear',
+        'count' => $totalFeedback,
+        'priority' => 'positive',
+        'department' => 'All Departments'
+    ]];
+}
+
+if (empty($aiNarrative)) {
+    $aiNarrative = [[
+        'title' => 'Dashboard Active',
+        'description' => "Currently tracking {$totalFeedback} feedback submissions. The system is monitoring for patterns and trends.",
+        'priority' => 'positive',
+        'department' => 'System'
+    ]];
+}
+
+if (empty($aiRecommendations)) {
+    $aiRecommendations = [[
+        'title' => 'Continue Monitoring',
+        'term' => 'short-term',
+        'evidence' => "{$totalFeedback} feedbacks collected",
+        'action' => 'Maintain regular feedback collection to identify improvement opportunities.',
+        'impact' => 'Ongoing service quality monitoring'
+    ]];
+}
         
         $aiInsights = $this->aiService->smartCluster($texts);
         $aiNarrative = $this->aiService->generateInsights($texts);
