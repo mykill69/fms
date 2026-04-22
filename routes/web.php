@@ -6,8 +6,12 @@ use App\Http\Controllers\AdminController;
 
 
 // USER SIDE
-Route::get('/feedback', [FeedbackController::class, 'create']);
-Route::post('/feedback', [FeedbackController::class, 'store']);
+Route::get('/', function () {
+    return redirect('/feedback');
+});
+
+Route::get('/feedback', [FeedbackController::class, 'create'])->name('feedback.create');
+Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 
 // // ADMIN SIDE
 // Route::get('/admin/dashboard/data', [AdminController::class, 'dashboardData']);

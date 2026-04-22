@@ -14,7 +14,7 @@
 
     <!-- HEADER -->
     <div class="text-center mb-6 sm:mb-8">
-        <img src="/img/cpsu_logo.png" class="mx-auto w-16 sm:w-20 md:w-24 mb-3">
+        <img src="{{ asset('img/cpsu_logo.png') }}" class="mx-auto w-16 sm:w-20 md:w-24 mb-3">
 
         <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-wide text-[#0b6036]"
             style="font-family: 'Arial Black', Arial, sans-serif;">
@@ -106,7 +106,7 @@
     <!-- FORM -->
     <div class="max-w-2xl mx-auto bg-white p-5 sm:p-6 md:p-8 rounded-2xl shadow-lg" x-data="feedbackForm()">
 
-        <form method="POST" action="/feedback">
+        <form method="POST" action="{{ url('/feedback') }}">
             @csrf
 
             <!-- ROLE -->
