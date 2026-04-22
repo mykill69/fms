@@ -977,7 +977,7 @@
                 dateTo: '',
 
                 // Add base URL from Laravel
-                baseUrl: '{{ url('/') }}',
+                baseUrl: '{{ url('listen/') }}',
 
                 init() {
                     this.load();
