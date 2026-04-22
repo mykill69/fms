@@ -26,9 +26,21 @@
         </p>
     </div>
     @if (session('success'))
-        <div
-            class="max-w-2xl mx-auto mb-4 px-4 py-3 rounded-lg bg-green-100 border border-green-300 text-green-800 text-sm sm:text-base">
-            {{ session('success') }}
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform -translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-2"
+            class="max-w-2xl mx-auto mb-4 px-4 py-3 rounded-lg bg-green-100 border border-green-300 text-green-800 text-sm sm:text-base flex items-center justify-between">
+            <span>{{ session('success') }}</span>
+            <button @click="show = false" class="ml-4 text-green-600 hover:text-green-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
         </div>
     @endif
     <!-- INTRO CARD -->
