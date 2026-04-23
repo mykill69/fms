@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Cache;
 class OllamaService
 {
     private const MODEL = 'llama3:8b';
-    private const BASE_URL = 'http://103.107.82.222:11434/api/generate';
-    //  private const BASE_URL = 'http://127.0.0.1:11434:11434/api/generate';
+    // private const BASE_URL = 'http://103.107.82.222:11434/api/generate';
+     private const BASE_URL = 'http://127.0.0.1:11434:11434/api/generate';
     
     private function callModel(string $prompt, int $timeout = 12, array $options = []): ?string
     {
