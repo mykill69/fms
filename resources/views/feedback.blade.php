@@ -287,7 +287,7 @@
             <hr class="my-5 border-gray-200">
 
             <h6 class="font-semibold text-sm sm:text-base mb-2 text-gray-800">
-                Which office is this about? <span class="text-red-500">*</span>
+                Select the office you would like to provide feedback for. <span class="text-red-500">*</span>
             </h6>
 
             <select name="department" required
