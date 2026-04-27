@@ -7,11 +7,13 @@
                 <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
                 <p class="text-gray-600">Manage system users and their access levels</p>
             </div>
+            @if(auth()->user()->isSuperAdmin())
             <button @click="openModal('create')"
                 class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
                 <i class="fas fa-plus"></i>
                 <span>Add User</span>
             </button>
+            @endif
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" x-data="{
@@ -30,10 +32,11 @@
                     'last_login' => $u->last_login_at ? $u->last_login_at->diffForHumans() : 'Never',
                     'last_login_ts' => $u->last_login_at ? $u->last_login_at->timestamp : 0,
                     'can_edit' => auth()->user()->isSuperAdmin() || !$u->isSuperAdmin(),
-                    'can_delete' => auth()->id() !== $u->id && (auth()->user()->isSuperAdmin() || !$u->isSuperAdmin()),
+                    'can_delete' => auth()->id() !== $u->id && auth()->user()->isSuperAdmin() && !$u->isSuperAdmin(),
                 ];
             })) }},
             currentUserId: {{ auth()->id() }},
+            isSuperAdmin: {{ auth()->user()->isSuperAdmin() ? 'true' : 'false' }},
             filteredItems: [],
             paginatedItems: [],
             search: '',
@@ -226,7 +229,6 @@
             </div>
         </div>
 
-        <!-- User Modal -->
         <div x-show="modalOpen" x-transition.opacity
             class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             style="display: none;">
@@ -279,7 +281,9 @@
                                 <select x-model="form.role" required @change="onRoleChange()"
                                     class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                                     @foreach ($roles as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
+                                        @if(auth()->user()->isSuperAdmin() || $value !== 'super_admin')
+                                            <option value="{{ $value }}">{{ $label }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </div>
@@ -345,6 +349,7 @@
                 modalMode: 'create',
                 modalTitle: 'Create New User',
                 availablePages: @json($availablePages),
+                isSuperAdmin: {{ auth()->user()->isSuperAdmin() ? 'true' : 'false' }},
                 form: { id: null, name: '', email: '', department: '', password: '', role: 'office_head', status: 'active', access_permissions: [] },
 
                 onRoleChange() {

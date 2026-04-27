@@ -53,7 +53,7 @@ class User extends Authenticatable
     public static function getRoles()
     {
         return [
-            // self::ROLE_SUPER_ADMIN => 'Super Administrator',
+            self::ROLE_SUPER_ADMIN => 'Super Administrator',
             self::ROLE_CAMPUS_ADMIN => 'Campus Administrator',
             self::ROLE_OFFICE_HEAD => 'Office Head',
             self::ROLE_DIRECTOR => 'Director',
