@@ -462,20 +462,20 @@ class AdminController extends Controller
     }
 
     public function flagged(Request $request)
-    {
-        $query = Feedback::where('rating', '<=', 2);
-        $query = $this->applyDepartmentFilter($query);
-        
-        if ($request->has('sort')) {
-            $direction = $request->get('direction', 'asc');
-            $query->orderBy($request->sort, $direction);
-        } else {
-            $query->orderBy('rating', 'asc')->orderBy('created_at', 'desc');
-        }
-        
-        $flaggedFeedbacks = $query->paginate(15);
-        return view('admin.flagged', compact('flaggedFeedbacks'));
+{
+    $query = Feedback::where('rating', '<=', 2);
+    $query = $this->applyDepartmentFilter($query);
+    
+    if ($request->has('sort')) {
+        $direction = $request->get('direction', 'asc');
+        $query->orderBy($request->sort, $direction);
+    } else {
+        $query->orderBy('rating', 'asc')->orderBy('created_at', 'desc');
     }
+    
+    $flaggedFeedbacks = $query->paginate(15);
+    return view('admin.flagged', compact('flaggedFeedbacks'));
+}
 
     public function resolveFlagged($id)
     {
