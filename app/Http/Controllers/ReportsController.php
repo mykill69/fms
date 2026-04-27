@@ -8,12 +8,16 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\FeedbackReportExport;
+use Illuminate\Support\Facades\Auth;
 
 class ReportsController extends Controller
 {
     public function index()
     {
-        $departments = Feedback::distinct()->pluck('department')->filter()->values();
+        $query = Feedback::distinct();
+        $query = $this->applyDepartmentFilter($query);
+        
+        $departments = $query->pluck('department')->filter()->values();
         $roles = Feedback::distinct()->pluck('role')->filter()->values();
         $types = Feedback::distinct()->pluck('type')->filter()->values();
         
@@ -40,6 +44,7 @@ class ReportsController extends Controller
         $dates = $this->getDateRange($request);
         
         $query = Feedback::whereBetween('created_at', [$dates['start'], $dates['end']]);
+        $query = $this->applyDepartmentFilter($query);
         
         if ($request->filled('department')) {
             $query->where('department', $request->department);
@@ -79,6 +84,25 @@ class ReportsController extends Controller
         }
         
         return view('admin.reports.result', $reportData);
+    }
+
+    private function applyDepartmentFilter($query)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return $query;
+        }
+        
+        if ($user->role === 'super_admin' || $user->role === 'quality_assurance') {
+            return $query;
+        }
+        
+        if ($user->department) {
+            return $query->where('department', $user->department);
+        }
+        
+        return $query;
     }
 
     private function getDateRange(Request $request): array

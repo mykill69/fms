@@ -32,15 +32,25 @@
                 </div>
             </div>
 
+            @php
+                $user = auth()->user();
+                $isRestricted = !in_array($user->role, ['super_admin', 'quality_assurance']);
+            @endphp
+
             <div class="grid grid-cols-4 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium mb-1">Department</label>
-                    <select name="department" class="w-full border rounded px-3 py-2">
-                        <option value="">All</option>
-                        @foreach($departments as $d)
-                            <option value="{{ $d }}">{{ $d }}</option>
-                        @endforeach
-                    </select>
+                    @if($isRestricted && $user->department)
+                        <input type="text" value="{{ $user->department }}" class="w-full border rounded px-3 py-2 bg-gray-100" disabled>
+                        <input type="hidden" name="department" value="{{ $user->department }}">
+                    @else
+                        <select name="department" class="w-full border rounded px-3 py-2">
+                            <option value="">All</option>
+                            @foreach($departments as $d)
+                                <option value="{{ $d }}">{{ $d }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Type</label>
