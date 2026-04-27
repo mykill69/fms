@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="{{ asset('js/tailwind.js') }}"></script>
     <script defer src="{{ asset('js/alpine.js') }}"></script>
+
+
+    <link rel="shortcut icon" type="" href="{{ asset('img/cpsu_logo.png') }}">
+
+    
     <style>
         @keyframes float-slow {
             0%, 100% { transform: translateY(0px) rotate(0deg); }

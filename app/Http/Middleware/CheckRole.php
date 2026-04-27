@@ -14,12 +14,21 @@ class CheckRole
         }
 
         $userRole = auth()->user()->role;
+        
         $roleHierarchy = [
-            'super_admin' => 4, 
-            'admin' => 3, 
-            'manager' => 2, 
-            'viewer' => 1
+            'super_admin' => 8,
+            'president' => 7,
+            'vpaa' => 6,
+            'vpaf' => 5,
+            'campus_administrator' => 4,
+            'director' => 3,
+            'quality_assurance' => 2,
+            'office_head' => 1
         ];
+        
+        if ($userRole === 'super_admin') {
+            return $next($request);
+        }
         
         foreach ($roles as $role) {
             if (isset($roleHierarchy[$userRole]) && 

@@ -38,10 +38,18 @@ Route::group(['prefix' => 'admin', 'middleware' => ['admin.auth']], function () 
     Route::post('/reports/generate', [ReportsController::class, 'generate'])->name('admin.reports.generate');
     Route::get('/reports/download', [ReportsController::class, 'download'])->name('admin.reports.download');
     
+     // Flagged Feedbacks
+    Route::get('/flagged', [AdminController::class, 'flagged'])->name('admin.flagged.index');
+    Route::patch('/flagged/{id}/resolve', [AdminController::class, 'resolveFlagged'])->name('admin.flagged.resolve');
+
     // User Management
     Route::get('/users', [UserManagementController::class, 'index'])->name('admin.users.index');
     Route::post('/users', [UserManagementController::class, 'store'])->name('admin.users.store');
     Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('admin.users.destroy');
     Route::patch('/users/{user}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+
+       // Settings
+    Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings.index');
+    Route::put('/settings/update', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
 });

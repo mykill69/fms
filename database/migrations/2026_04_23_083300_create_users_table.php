@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('username')->unique();
+            $table->string('department')->nullable();
             $table->string('password');
             $table->enum('role', [
                 'super_admin',
@@ -37,7 +37,7 @@ return new class extends Migration
             
             // Add indexes for better performance
             $table->index('email');
-            $table->index('username');
+            $table->index('department');
             $table->index('role');
             $table->index('status');
         });

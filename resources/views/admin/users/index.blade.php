@@ -44,8 +44,9 @@
                                         </div>
                                         <div>
                                             <p class="font-medium text-gray-800">{{ $user->name }}</p>
-                                            <p class="text-sm text-gray-500">{{ $user->email }}</p>
-                                            <p class="text-xs text-gray-400">@{{ $user->username }}</p>
+                                            <p class="text-sm text-gray-500">{{ $user->department ?? 'No office assigned' }}
+                                            </p>
+                                            <p class="text-xs text-gray-400">{{ $user->email }}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -57,14 +58,34 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     @if ($user->isSuperAdmin())
-                                        <span class="text-xs text-green-600 font-medium">Full Access</span>
+                                        <span
+                                            class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                            <i class="fas fa-crown mr-1"></i>Full Access
+                                        </span>
                                     @else
                                         @php
                                             $permissions = $user->access_permissions ?? [];
+                                            if (!is_array($permissions)) {
+                                                $permissions = [];
+                                            }
+                                            $pageLabels = [
+                                                'dashboard' => 'Dashboard',
+                                                'feedbacks' => 'Feedbacks',
+                                                'reports' => 'Reports',
+                                                'user_management' => 'Users',
+                                            ];
                                         @endphp
-                                        <span class="text-xs text-gray-500">
-                                            {{ count($permissions) }} page(s)
-                                        </span>
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach ($permissions as $perm)
+                                                <span
+                                                    class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                                    {{ $pageLabels[$perm] ?? $perm }}
+                                                </span>
+                                            @endforeach
+                                            @if (empty($permissions))
+                                                <span class="text-xs text-gray-400">No access</span>
+                                            @endif
+                                        </div>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4">
@@ -82,16 +103,30 @@
                                     {{ $user->last_login_at ? $user->last_login_at->diffForHumans() : 'Never' }}
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    <button @click='openModal("edit", @json($user))'
-                                        class="text-blue-600 hover:text-blue-800 mr-3">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    @if ($user->id !== auth()->id())
-                                        <button @click="deleteUser({{ $user->id }})"
-                                            class="text-red-600 hover:text-red-800">
-                                            <i class="fas fa-trash"></i>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <button @click='openModal("edit", @json($user))'
+                                            class="relative w-9 h-9 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 flex items-center justify-center group"
+                                            title="Edit User">
+                                            <i
+                                                class="fas fa-pen-to-square text-sm group-hover:scale-110 transition-transform"></i>
+                                            <span
+                                                class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                Edit
+                                            </span>
                                         </button>
-                                    @endif
+                                        @if ($user->id !== auth()->id())
+                                            <button @click="deleteUser({{ $user->id }})"
+                                                class="relative w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 transition-all duration-200 flex items-center justify-center group"
+                                                title="Delete User">
+                                                <i
+                                                    class="fas fa-trash-can text-sm group-hover:scale-110 transition-transform"></i>
+                                                <span
+                                                    class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                    Delete
+                                                </span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -123,10 +158,20 @@
                                     class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                                <input type="text" x-model="form.username" required
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <div class="grid grid-cols-1z gap-4">
+
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Office / Department</label>
+                                    <select x-model="form.department"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                                        <option value="">Select Office</option>
+                                        <option value="CPSU - University Wide">CPSU - University Wide</option>
+                                        @foreach ($offices as $office)
+                                            <option value="{{ $office->office_name }}">{{ $office->office_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -227,7 +272,7 @@
                     id: null,
                     name: '',
                     email: '',
-                    username: '',
+                    department: '',
                     password: '',
                     role: 'office_head',
                     status: 'active',
@@ -246,7 +291,6 @@
                     this.modalTitle = mode === 'create' ? 'Create New User' : 'Edit User';
 
                     if (mode === 'edit' && userData) {
-                        // Parse access_permissions if it's a string
                         let permissions = userData.access_permissions;
                         if (typeof permissions === 'string') {
                             try {
@@ -260,7 +304,7 @@
                             id: userData.id,
                             name: userData.name,
                             email: userData.email,
-                            username: userData.username,
+                            department: userData.department || '',
                             password: '',
                             role: userData.role,
                             status: userData.status,
@@ -271,7 +315,7 @@
                             id: null,
                             name: '',
                             email: '',
-                            username: '',
+                            department: '',
                             password: '',
                             role: 'office_head',
                             status: 'active',

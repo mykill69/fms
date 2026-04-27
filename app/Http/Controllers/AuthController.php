@@ -12,6 +12,18 @@ class AuthController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->role === 'super_admin') {
+                return redirect()->route('admin.dashboard');
+            }
+            $permissions = $user->access_permissions;
+            if (!is_array($permissions)) {
+                $permissions = [];
+            }
+            if (!empty($permissions)) {
+                $firstPage = $permissions[0];
+                return $this->redirectToPage($firstPage);
+            }
             return redirect()->route('admin.dashboard');
         }
         return view('auth.login');
@@ -34,13 +46,20 @@ class AuthController extends Controller
 
         if ($user->status !== 'active') {
             return back()->withErrors([
-                'email' => 'Your account is inactive.',
+                'email' => 'Your account is inactive. Please contact the administrator.',
             ])->withInput($request->only('email'));
         }
 
         if (!Hash::check($request->password, $user->password)) {
             return back()->withErrors([
-                'email' => 'Invalid password.',
+                'email' => 'Invalid password. Please try again.',
+            ])->withInput($request->only('email'));
+        }
+
+        $allowedRoles = array_keys(User::getRoles());
+        if (!in_array($user->role, $allowedRoles)) {
+            return back()->withErrors([
+                'email' => 'Your account does not have proper permissions.',
             ])->withInput($request->only('email'));
         }
 
@@ -53,7 +72,36 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        if ($user->role === 'super_admin') {
+            return redirect()->intended(route('admin.dashboard'));
+        }
+
+        $permissions = $user->access_permissions;
+        if (!is_array($permissions)) {
+            $permissions = [];
+        }
+        if (!empty($permissions)) {
+            $firstPage = $permissions[0];
+            return $this->redirectToPage($firstPage);
+        }
+
+        Auth::logout();
+        return back()->withErrors([
+            'email' => 'Your account has no pages assigned. Contact the administrator.',
+        ])->withInput($request->only('email'));
+    }
+
+    private function redirectToPage($page)
+    {
+        $pageRoutes = [
+            'dashboard' => 'admin.dashboard',
+            'feedbacks' => 'admin.feedbacks',
+            'reports' => 'admin.reports.index',
+            'user_management' => 'admin.users.index',
+        ];
+
+        $routeName = isset($pageRoutes[$page]) ? $pageRoutes[$page] : 'admin.dashboard';
+        return redirect()->route($routeName);
     }
 
     public function logout(Request $request)
@@ -62,6 +110,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
-        return redirect()->route('login')->with('success', 'You have been logged out.');
+        return redirect()->route('login')->with('success', 'You have been logged out successfully.');
     }
 }

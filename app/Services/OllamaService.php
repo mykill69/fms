@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Cache;
 class OllamaService
 {
     private const MODEL = 'llama3:8b';
-    private const BASE_URL = 'http://103.107.82.222:11434/api/generate';
-    //  private const BASE_URL = 'http://127.0.0.1:11434:11434/api/generate';
+    // private const BASE_URL = 'http://103.107.82.222:11434/api/generate';
+     private const BASE_URL = 'http://127.0.0.1:11434:11434/api/generate';
     
     private function callModel(string $prompt, int $timeout = 12, array $options = []): ?string
     {
@@ -87,55 +87,89 @@ class OllamaService
     }
 
     public function smartCluster(array $texts): array
-    {
-        if (empty($texts)) return [];
+{
+    if (empty($texts)) return [];
 
-        $cacheKey = 'cluster_' . md5(implode('|', $texts));
+    $cacheKey = 'cluster_' . md5(implode('|', $texts));
+    
+    return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($texts) {
+        $map = [];
+        $stopWords = ['the','and','you','your','with','for','this','that','are','was','were','has','have','from','they','what','when','where'];
+        $negativeWords = ['slow', 'bad', 'poor', 'problem', 'issue', 'complaint', 'not', 'never', 'terrible', 'worst', 'delay', 'wait', 'long', 'rude', 'unfriendly', 'difficult', 'confusing', 'complicated', 'broken', 'error', 'fail', 'lack', 'missing', 'need', 'improve', 'enhance', 'upgrade', 'fix', 'no', 'damn'];
         
-        return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($texts) {
-            $map = [];
-            $stopWords = ['the','and','you','your','with','for','this','that','are','was','were','has','have','from','they','what','when','where'];
+        foreach ($texts as $text) {
+            $clean = strtolower(trim($text));
+            $clean = preg_replace('/[^\w\s]/', '', $clean);
+            $clean = preg_replace('/\s+/', ' ', $clean);
             
-            foreach ($texts as $text) {
-                $clean = strtolower(trim($text));
-                $clean = preg_replace('/[^\w\s]/', '', $clean);
-                $clean = preg_replace('/\s+/', ' ', $clean);
-                
-                if (strlen($clean) < 3) continue;
-                
-                $words = explode(' ', $clean);
-                $words = array_filter($words, fn($w) => strlen($w) > 2 && !in_array($w, $stopWords));
-                $words = array_values($words);
-                
-                for ($i = 0; $i < count($words) - 1; $i++) {
-                    $phrase = $words[$i] . ' ' . $words[$i + 1];
-                    $map[$phrase] = ($map[$phrase] ?? 0) + 1;
-                }
-                
-                for ($i = 0; $i < count($words) - 2; $i++) {
-                    $phrase = $words[$i] . ' ' . $words[$i + 1] . ' ' . $words[$i + 2];
-                    $map[$phrase] = ($map[$phrase] ?? 0) + 1;
+            if (strlen($clean) < 3) continue;
+            
+            $hasNegative = false;
+            foreach ($negativeWords as $nw) {
+                if (stripos($clean, $nw) !== false) {
+                    $hasNegative = true;
+                    break;
                 }
             }
             
-            arsort($map);
+            if (!$hasNegative) continue;
             
-            $result = [];
-            foreach ($map as $issue => $count) {
-                if ($count < 2) continue;
-                $priority = $count >= 5 ? 'high' : ($count >= 3 ? 'medium' : 'low');
-                $result[] = [
-                    'issue' => $issue,
-                    'title' => ucfirst($issue),
-                    'count' => $count,
-                    'priority' => $priority,
-                    'department' => $this->detectDepartment($issue)
-                ];
+            $words = explode(' ', $clean);
+            $words = array_filter($words, fn($w) => strlen($w) > 2 && !in_array($w, $stopWords));
+            $words = array_values($words);
+            
+            for ($i = 0; $i < count($words) - 1; $i++) {
+                $phrase = $words[$i] . ' ' . $words[$i + 1];
+                $map[$phrase] = ($map[$phrase] ?? 0) + 1;
             }
             
-            return array_slice($result, 0, 8);
-        });
-    }
+            for ($i = 0; $i < count($words) - 2; $i++) {
+                $phrase = $words[$i] . ' ' . $words[$i + 1] . ' ' . $words[$i + 2];
+                $map[$phrase] = ($map[$phrase] ?? 0) + 1;
+            }
+        }
+        
+        arsort($map);
+        
+        $result = [];
+        $totalMentions = array_sum($map);
+        
+        foreach ($map as $issue => $count) {
+            if ($count < 2) continue;
+            
+            $percentage = $totalMentions > 0 ? round(($count / $totalMentions) * 100) : 0;
+            
+            if ($percentage >= 20 || $count >= 5) {
+                $priority = 'critical';
+            } elseif ($percentage >= 10 || $count >= 3) {
+                $priority = 'high';
+            } else {
+                $priority = 'medium';
+            }
+            
+            $result[] = [
+                'issue' => $issue,
+                'title' => ucfirst($issue),
+                'count' => $count,
+                'percentage' => $percentage,
+                'priority' => $priority,
+                'department' => $this->detectDepartment($issue)
+            ];
+        }
+        
+        if (empty($result)) {
+            return [[
+                'issue' => 'No significant concerns',
+                'title' => 'All Clear',
+                'count' => 0,
+                'priority' => 'positive',
+                'department' => 'All Departments'
+            ]];
+        }
+        
+        return array_slice($result, 0, 8);
+    });
+}
 
     private function detectDepartment(string $text): string
     {

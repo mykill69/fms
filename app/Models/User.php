@@ -13,7 +13,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'username',
+        'department',
         'password',
         'role',
         'access_permissions',
@@ -32,7 +32,6 @@ class User extends Authenticatable
         'access_permissions' => 'array',
     ];
 
-    // Role constants
     const ROLE_SUPER_ADMIN = 'super_admin';
     const ROLE_CAMPUS_ADMIN = 'campus_administrator';
     const ROLE_OFFICE_HEAD = 'office_head';
@@ -42,14 +41,13 @@ class User extends Authenticatable
     const ROLE_PRESIDENT = 'president';
     const ROLE_QA = 'quality_assurance';
 
-    // Available pages for access control
     const AVAILABLE_PAGES = [
         'dashboard' => 'Dashboard',
         'feedbacks' => 'Feedbacks',
         'reports' => 'Reports',
-        'ai_analysis' => 'AI Analysis',
-        'offices' => 'All Offices',
+        'flagged' => 'Flagged',
         'user_management' => 'User Management',
+        'settings' => 'Settings',
     ];
 
     public static function getRoles()
@@ -82,12 +80,14 @@ class User extends Authenticatable
 
     public function getRoleDisplayAttribute()
     {
-        return self::getRoles()[$this->role] ?? ucfirst(str_replace('_', ' ', $this->role));
+        $roles = self::getRoles();
+        return $roles[$this->role] ?? ucfirst(str_replace('_', ' ', $this->role));
     }
 
     public function getRoleBadgeColorAttribute()
     {
-        return self::getRoleBadgeColors()[$this->role] ?? 'bg-gray-100 text-gray-700';
+        $colors = self::getRoleBadgeColors();
+        return $colors[$this->role] ?? 'bg-gray-100 text-gray-700';
     }
 
     public function isSuperAdmin()
@@ -95,9 +95,14 @@ class User extends Authenticatable
         return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
+    public function isQualityAssurance()
+    {
+        return $this->role === self::ROLE_QA;
+    }
+
     public function isAdmin()
     {
-        return in_array($this->role, [
+        $adminRoles = [
             self::ROLE_SUPER_ADMIN,
             self::ROLE_CAMPUS_ADMIN,
             self::ROLE_DIRECTOR,
@@ -105,27 +110,49 @@ class User extends Authenticatable
             self::ROLE_VPAF,
             self::ROLE_PRESIDENT,
             self::ROLE_QA
-        ]);
+        ];
+        return in_array($this->role, $adminRoles);
+    }
+
+    public function hasFullDashboardAccess()
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN || $this->role === self::ROLE_QA;
     }
 
     public function canAccess($page)
     {
-        // Super admin can access everything
-        if ($this->role === self::ROLE_SUPER_ADMIN) {
+        if ($this->isSuperAdmin()) {
             return true;
         }
-
-        // Check specific permissions
-        $permissions = $this->access_permissions ?? [];
+        if ($this->isQualityAssurance() && $page !== 'user_management') {
+            return true;
+        }
+        $permissions = $this->access_permissions;
+        if (!is_array($permissions)) {
+            $permissions = [];
+        }
         return in_array($page, $permissions);
     }
 
     public function getAllowedPages()
     {
-        if ($this->role === self::ROLE_SUPER_ADMIN) {
+        if ($this->isSuperAdmin()) {
             return array_keys(self::AVAILABLE_PAGES);
         }
-
-        return $this->access_permissions ?? [];
+        if ($this->isQualityAssurance()) {
+            $pages = array_keys(self::AVAILABLE_PAGES);
+            $filtered = [];
+            foreach ($pages as $page) {
+                if ($page !== 'user_management') {
+                    $filtered[] = $page;
+                }
+            }
+            return $filtered;
+        }
+        $permissions = $this->access_permissions;
+        if (!is_array($permissions)) {
+            return [];
+        }
+        return $permissions;
     }
 }

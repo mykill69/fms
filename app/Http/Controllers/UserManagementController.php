@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Office;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,8 @@ class UserManagementController extends Controller
         $users = User::orderBy('created_at', 'desc')->paginate(10);
         $roles = User::getRoles();
         $availablePages = User::AVAILABLE_PAGES;
-        return view('admin.users.index', compact('users', 'roles', 'availablePages'));
+        $offices = Office::orderBy('office_name', 'asc')->get();
+        return view('admin.users.index', compact('users', 'roles', 'availablePages', 'offices'));
     }
 
     public function store(Request $request)
@@ -24,7 +26,7 @@ class UserManagementController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'username' => 'required|string|unique:users,username',
+                'department' => 'nullable|string|max:255',
                 'password' => 'required|string|min:6',
                 'role' => ['required', Rule::in(array_keys(User::getRoles()))],
                 'status' => 'required|in:active,inactive',
@@ -33,7 +35,6 @@ class UserManagementController extends Controller
 
             $validated['password'] = Hash::make($validated['password']);
             
-            // Super admin gets all permissions automatically (null means full access)
             if ($validated['role'] === User::ROLE_SUPER_ADMIN) {
                 $validated['access_permissions'] = null;
             } else {
@@ -68,7 +69,7 @@ class UserManagementController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
-                'username' => ['required', 'string', Rule::unique('users')->ignore($user->id)],
+                'department' => 'nullable|string|max:255',
                 'role' => ['required', Rule::in(array_keys(User::getRoles()))],
                 'status' => 'required|in:active,inactive',
                 'access_permissions' => 'nullable|array'
@@ -78,7 +79,6 @@ class UserManagementController extends Controller
                 $validated['password'] = Hash::make($request->password);
             }
 
-            // Super admin gets all permissions automatically
             if ($validated['role'] === User::ROLE_SUPER_ADMIN) {
                 $validated['access_permissions'] = null;
             } else {
