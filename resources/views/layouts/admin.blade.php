@@ -244,7 +244,7 @@ if (darkMode) document.documentElement.classList.add('dark');">
     @endif
 
     @if ($user->role === 'super_admin' || in_array('user_management', $permissions))
-        @if ($user->role !== 'quality_assurance')
+        {{-- @if ($user->role !== 'quality_assurance') --}}
             <a href="{{ route('admin.users.index') }}"
                 :class="active === 'admin/users'
                     ?
@@ -258,7 +258,7 @@ if (darkMode) document.documentElement.classList.add('dark');">
                 </div>
                 <span class="font-medium text-sm">User Management</span>
             </a>
-        @endif
+        {{-- @endif --}}
     @endif
 
     @if ($user->role === 'super_admin' || in_array('settings', $permissions))
