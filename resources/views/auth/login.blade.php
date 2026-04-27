@@ -307,7 +307,7 @@
                                     </span>
                                     System Online
                                 </span>
-                                <span>CPSU Feedback v2.1.0</span>
+                                <span>CPSU Feedback v1.1.0</span>
                             </div>
                         </div>
                     </div>
