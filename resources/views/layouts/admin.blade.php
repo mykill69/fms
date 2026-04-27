@@ -161,125 +161,124 @@ if (darkMode) document.documentElement.classList.add('dark');">
             </div>
 
             <nav class="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto scrollbar-thin">
-                <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main Menu</p>
+    <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Main Menu</p>
 
-                @php
-                    $user = auth()->user();
-                    $permissions = $user->access_permissions;
-                    if (!is_array($permissions)) {
-                        $permissions = [];
-                    }
-                @endphp
+    @php
+        $user = auth()->user();
+        $permissions = $user->access_permissions;
+        if (!is_array($permissions)) {
+            $permissions = [];
+        }
+    @endphp
 
-                @if ($user->role === 'super_admin' || in_array('dashboard', $permissions))
-                    <a href="{{ route('admin.dashboard') }}"
-                        :class="active === 'admin/dashboard'
-                            ?
-                            'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
-                            'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                        class="flex items-center gap-3 px-3 py-2 lg:py-2.5 rounded-r-lg transition-all duration-200 group">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                            :class="active === 'admin/dashboard' ? 'bg-emerald-500/20 text-emerald-400' :
-                                'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                            <i class="fas fa-gauge-high text-base lg:text-lg"></i>
-                        </div>
-                        <span class="font-medium text-sm sm:text-base">Dashboard</span>
-                    </a>
-                @endif
+    @if ($user->role === 'super_admin' || in_array('dashboard', $permissions))
+        <a href="{{ route('admin.dashboard') }}"
+            :class="active === 'admin/dashboard'
+                ?
+                'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
+                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+            class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                :class="active === 'admin/dashboard' ? 'bg-emerald-500/20 text-emerald-400' :
+                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                <i class="fas fa-gauge-high text-sm"></i>
+            </div>
+            <span class="font-medium text-sm">Dashboard</span>
+        </a>
+    @endif
 
-                @if ($user->role === 'super_admin' || in_array('feedbacks', $permissions))
-                    <a href="{{ route('admin.feedbacks') }}"
-                        :class="active === 'admin/feedbacks'
-                            ?
-                            'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
-                            'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                        class="flex items-center gap-3 px-3 py-2 lg:py-2.5 rounded-r-lg transition-all duration-200 group">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                            :class="active === 'admin/feedbacks' ? 'bg-emerald-500/20 text-emerald-400' :
-                                'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                            <i class="fas fa-comments text-base lg:text-lg"></i>
-                        </div>
-                        <span class="font-medium text-sm lg:text-base">All feedback</span>
-                    </a>
-                @endif
+    @if ($user->role === 'super_admin' || in_array('feedbacks', $permissions))
+        <a href="{{ route('admin.feedbacks') }}"
+            :class="active === 'admin/feedbacks'
+                ?
+                'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
+                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+            class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                :class="active === 'admin/feedbacks' ? 'bg-emerald-500/20 text-emerald-400' :
+                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                <i class="fas fa-comments text-sm"></i>
+            </div>
+            <span class="font-medium text-sm">All feedback</span>
+        </a>
+    @endif
 
-                @if ($user->role === 'super_admin' || in_array('reports', $permissions))
-                    <a href="{{ route('admin.reports.index') }}"
-                        :class="active === 'admin/reports'
-                            ?
-                            'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
-                            'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                        class="flex items-center gap-3 px-3 py-2 lg:py-2.5 rounded-r-lg transition-all duration-200 group">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                            :class="active === 'admin/reports' ? 'bg-emerald-500/20 text-emerald-400' :
-                                'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                            <i class="fas fa-chart-simple text-base lg:text-lg"></i>
-                        </div>
-                        <span class="font-medium text-sm lg:text-base">Feedback reports</span>
-                    </a>
-                @endif
+    @if ($user->role === 'super_admin' || in_array('reports', $permissions))
+        <a href="{{ route('admin.reports.index') }}"
+            :class="active === 'admin/reports'
+                ?
+                'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
+                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+            class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                :class="active === 'admin/reports' ? 'bg-emerald-500/20 text-emerald-400' :
+                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                <i class="fas fa-chart-simple text-sm"></i>
+            </div>
+            <span class="font-medium text-sm">Feedback reports</span>
+        </a>
+    @endif
 
-                @if ($user->role === 'super_admin' || in_array('flagged', $permissions))
-                    <a href="{{ route('admin.flagged.index') }}"
-                        :class="active === 'admin/flagged'
-                            ?
-                            'bg-gradient-to-r from-red-500/20 to-red-600/20 text-white border-l-4 border-red-500' :
-                            'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                        class="flex items-center gap-3 px-3 py-2 lg:py-2.5 rounded-r-lg transition-all duration-200 group">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                            :class="active === 'admin/flagged' ? 'bg-red-500/20 text-red-400' :
-                                'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                            <i class="fas fa-flag text-base lg:text-lg"></i>
-                        </div>
-                        <span class="font-medium text-sm lg:text-base">Flagged</span>
-                        @php
-                            $flaggedCount = \App\Models\Feedback::where('rating', '<=', 2)
-                                ->whereDate('created_at', today())
-                                ->count();
-                        @endphp
-                        @if ($flaggedCount > 0)
-                            <span
-                                class="ml-auto px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full">{{ $flaggedCount }}</span>
-                        @endif
-                    </a>
-                @endif
+    @if ($user->role === 'super_admin' || in_array('flagged', $permissions))
+        <a href="{{ route('admin.flagged.index') }}"
+            :class="active === 'admin/flagged'
+                ?
+                'bg-gradient-to-r from-red-500/20 to-red-600/20 text-white border-l-4 border-red-500' :
+                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+            class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                :class="active === 'admin/flagged' ? 'bg-red-500/20 text-red-400' :
+                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                <i class="fas fa-flag text-sm"></i>
+            </div>
+            <span class="font-medium text-sm">Flagged</span>
+            @php
+                $flaggedCount = \App\Models\Feedback::where('rating', '<=', 2)
+                    ->whereDate('created_at', today())
+                    ->count();
+            @endphp
+            @if ($flaggedCount > 0)
+                <span class="ml-auto px-2 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full">{{ $flaggedCount }}</span>
+            @endif
+        </a>
+    @endif
 
-                @if ($user->role === 'super_admin' || in_array('user_management', $permissions))
-                    @if ($user->role !== 'quality_assurance')
-                        <a href="{{ route('admin.users.index') }}"
-                            :class="active === 'admin/users'
-                                ?
-                                'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
-                                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                            class="flex items-center gap-3 px-4 py-3 lg:py-3.5 rounded-r-lg transition-all duration-200 group">
-                            <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                                :class="active === 'admin/users' ? 'bg-emerald-500/20 text-emerald-400' :
-                                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                                <i class="fas fa-users-cog text-base lg:text-lg"></i>
-                            </div>
-                            <span class="font-medium text-sm lg:text-base">User Management</span>
-                        </a>
-                    @endif
-                @endif
+    @if ($user->role === 'super_admin' || in_array('user_management', $permissions))
+        @if ($user->role !== 'quality_assurance')
+            <a href="{{ route('admin.users.index') }}"
+                :class="active === 'admin/users'
+                    ?
+                    'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
+                    'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+                class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    :class="active === 'admin/users' ? 'bg-emerald-500/20 text-emerald-400' :
+                        'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                    <i class="fas fa-users-cog text-sm"></i>
+                </div>
+                <span class="font-medium text-sm">User Management</span>
+            </a>
+        @endif
+    @endif
 
-                @if ($user->role === 'super_admin' || in_array('settings', $permissions))
-                    <a href="{{ route('admin.settings.index') }}"
-                        :class="active === 'admin/settings'
-                            ?
-                            'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
-                            'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
-                        class="flex items-center gap-3 px-3 py-2 lg:py-2.5 rounded-r-lg transition-all duration-200 group">
-                        <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                            :class="active === 'admin/settings' ? 'bg-emerald-500/20 text-emerald-400' :
-                                'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
-                            <i class="fas fa-cog text-base lg:text-lg"></i>
-                        </div>
-                        <span class="font-medium text-sm lg:text-base">System settings</span>
-                    </a>
-                @endif
+    @if ($user->role === 'super_admin' || in_array('settings', $permissions))
+        <a href="{{ route('admin.settings.index') }}"
+            :class="active === 'admin/settings'
+                ?
+                'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-white border-l-4 border-emerald-500' :
+                'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent'"
+            class="flex items-center gap-3 px-3 py-2 rounded-r-lg transition-all duration-200 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                :class="active === 'admin/settings' ? 'bg-emerald-500/20 text-emerald-400' :
+                    'bg-gray-800 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300'">
+                <i class="fas fa-cog text-sm"></i>
+            </div>
+            <span class="font-medium text-sm">System settings</span>
+        </a>
+    @endif
 
-                <div class="h-4"></div>
-            </nav>
+    <div class="h-4"></div>
+</nav>
 
             <div
                 class="flex-shrink-0 p-4 border-t border-gray-700/50 dark:border-gray-800 bg-gradient-to-t from-gray-900 via-gray-900 to-transparent">
